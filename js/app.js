@@ -74,13 +74,13 @@ function analyser(){
     if(t.match){
       const tb = badgeInfo(t.match.niveau);
       return `<div class="ingredient-row">
-        <div class="left"><span class="name">${escapeHtml(t.texte)}</span><span class="note">${escapeHtml(t.match.note)}</span></div>
-        <span class="tag ${tb.cls}">${tb.label}</span>
+        <div class="head"><span class="name">${escapeHtml(t.texte)}</span><span class="tag ${tb.cls}">${tb.label}</span></div>
+        <span class="note">${escapeHtml(t.match.note)}</span>
       </div>`;
     }
     return `<div class="ingredient-row">
-      <div class="left"><span class="name">${escapeHtml(t.texte)}</span><span class="note">Pas encore dans le carnet — vérifie l'étiquette, ou ajoute-le si tu as une source fiable.</span></div>
-      <span class="tag unknown">Non répertorié</span>
+      <div class="head"><span class="name">${escapeHtml(t.texte)}</span><span class="tag unknown">Non répertorié</span></div>
+      <span class="note">Pas encore dans le carnet — vérifie l'étiquette, ou ajoute-le si tu as une source fiable.</span>
     </div>`;
   }).join("");
 
@@ -172,10 +172,13 @@ function renderCarnet(filtre = ""){
       const b = badgeInfo(e.niveau);
       const estPerso = e.categorie === "Ajoutés par vous";
       html += `<div class="carnet-item ${estPerso ? "custom" : ""}">
-        <div><div class="name">${escapeHtml(e.noms[0])}</div><div class="src">${escapeHtml(e.source)}</div></div>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div class="head">
+          <span class="name">${escapeHtml(e.noms[0])}</span>
           <span class="badge ${b.cls}">${b.label}</span>
-          ${estPerso ? `<button class="del-btn" title="Retirer" onclick="supprimerDuCarnetPerso('${e.id}')"><i class="ti-x">&times;</i></button>` : ""}
+        </div>
+        <div class="badge-row">
+          <span class="src">${escapeHtml(e.source)}</span>
+          ${estPerso ? `<button class="del-btn" title="Retirer" onclick="supprimerDuCarnetPerso('${e.id}')">&times;</button>` : ""}
         </div>
       </div>`;
     });

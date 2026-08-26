@@ -87,14 +87,14 @@ header{ display:flex; align-items:center; justify-content:space-between; margin-
 
 .ingredient-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
 .ingredient-row{
-  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  display:flex; flex-direction:column; gap:6px;
   padding:9px 12px; border-radius:10px; background:#FAFBF6; border:1px solid #EEF0E7;
   font-size:13.5px;
 }
-.ingredient-row .left{ display:flex; flex-direction:column; gap:2px; padding-right:8px; }
+.ingredient-row .head{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
 .ingredient-row .name{ font-weight:600; }
 .ingredient-row .note{ font-size:11.5px; color:var(--ink-soft); line-height:1.4; }
-.ingredient-row .tag{ flex:none; margin-top:1px; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; }
+.ingredient-row .tag{ flex:none; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; }
 .tag.danger{ background:var(--danger-bg); color:var(--danger-text); }
 .tag.safe{ background:var(--safe-bg); color:var(--safe-text); }
 .tag.warn{ background:var(--warn-bg); color:var(--warn-text); }
@@ -131,16 +131,18 @@ header{ display:flex; align-items:center; justify-content:space-between; margin-
   margin:0 0 8px; font-weight:700;
 }
 .carnet-item{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  display:flex; flex-direction:column; gap:6px;
   background:var(--surface); border:1px solid #ECEFE5; border-radius:12px;
   padding:11px 13px; margin-bottom:7px; font-size:13.5px;
 }
+.carnet-item .head{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
 .carnet-item .name{ font-weight:600; }
 .carnet-item .src{ font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+.carnet-item .badge-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .carnet-item.custom{ border-style:dashed; }
 .del-btn{
   border:none; background:none; color:var(--danger-text); font-size:16px; line-height:1;
-  cursor:pointer; padding:2px 6px;
+  cursor:pointer; padding:2px 6px; flex:none;
 }
 .empty{ font-size:13px; color:var(--ink-soft); }
 
