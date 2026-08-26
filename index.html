@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Épi — y a-t-il du gluten dedans ?</title>
+<meta name="description" content="Repère les possibilités de gluten dans un aliment ou une recette, de manière sourcée.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <svg class="epi-icon" width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <path d="M20 4 V33" stroke="#1F6F5C" stroke-width="2.4" stroke-linecap="round"/>
+        <g stroke="#E8A33D" stroke-width="2.2" stroke-linecap="round">
+          <path d="M20 10 L13 6"/><path d="M20 10 L27 6"/>
+          <path d="M20 15 L13 11"/><path d="M20 15 L27 11"/>
+          <path d="M20 20 L13 16"/><path d="M20 20 L27 16"/>
+          <path d="M20 25 L14 21.5"/><path d="M20 25 L26 21.5"/>
+        </g>
+        <path d="M20 33 L16 38 M20 33 L24 38" stroke="#1F6F5C" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Épi</h1>
+        <span>repère le gluten en un coup d'œil</span>
+      </div>
+    </div>
+    <button class="carnet-toggle" onclick="toggleCarnet()">📖 Carnet</button>
+  </header>
+
+  <section class="hero">
+    <h2>Un aliment, une recette&nbsp;? On regarde ce qu'il y a dedans.</h2>
+    <div class="search-row">
+      <input id="query" type="text" placeholder="ex : sauce soja, couscous, farine de blé…" value="sauce soja, riz, oignon">
+      <button onclick="analyser()">Analyser</button>
+    </div>
+    <p class="hint">Astuce : sépare les ingrédients d'une recette par des virgules.</p>
+    <div class="legend">
+      <span><i class="dot safe"></i>Sans gluten — confirmé</span>
+      <span><i class="dot warn"></i>À vérifier — sur l'étiquette du produit</span>
+      <span><i class="dot danger"></i>Contient du gluten</span>
+      <span><i class="dot unknown"></i>Non répertorié — pas encore dans le carnet</span>
+    </div>
+  </section>
+
+  <div id="result"></div>
+
+  <section id="carnet">
+    <div class="carnet-head">
+      <h2>Carnet d'ingrédients</h2>
+    </div>
+    <input id="carnet-search" class="carnet-search" placeholder="Filtrer le carnet…">
+    <div id="carnet-content"></div>
+  </section>
+
+  <footer>
+    Informations fournies à titre indicatif, sourcées AFDIAG / Ameli.fr / réglementation UE.<br>
+    Ne remplace jamais un avis médical en cas de <b>maladie cœliaque</b> ou d'allergie.
+  </footer>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>analyser();</script>
+</body>
+</html>
