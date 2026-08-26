@@ -19,9 +19,19 @@ function sauverCarnetPerso(liste){
 
 let carnetPerso = chargerCarnetPerso();
 let dernierResultat = null;
+let derniereAnalyse = { morceaux:[], trouves:[] };
 
 function toutesLesEntrees(){
   return INGREDIENTS.concat(carnetPerso);
+}
+
+const MOTS_VIDES = [
+  "de","du","des","le","la","les","un","une","et","au","aux","avec","sans","a","l","d","en",
+  "bio","frais","fraiche","fraîche","nature","entier","entiere","entière","maison","cru","crue","cuit","cuite"
+];
+
+function motsSignificatifs(texte){
+  return normaliser(texte).split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !MOTS_VIDES.includes(w));
 }
 
 // Cherche l'entrée qui correspond le mieux à un morceau de texte donné.
@@ -45,6 +55,64 @@ function chercheIngredient(morceau){
   return meilleur;
 }
 
+// --- Correcteur orthographique léger (distance de Levenshtein) ---
+
+function distanceLevenshtein(a, b){
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length:m + 1 }, () => new Array(n + 1).fill(0));
+  for(let i = 0; i <= m; i++) dp[i][0] = i;
+  for(let j = 0; j <= n; j++) dp[0][j] = j;
+  for(let i = 1; i <= m; i++){
+    for(let j = 1; j <= n; j++){
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+// Construit un index normalisé -> orthographe originale à partir de tous les mots
+// connus de la base (officielle + carnet perso), pour proposer des corrections.
+function construireIndexMots(){
+  const index = new Map();
+  toutesLesEntrees().forEach(e => {
+    e.noms.forEach(nom => {
+      nom.split(/[^a-zA-ZÀ-ÿ0-9]+/).forEach(w => {
+        if(w.length < 3) return;
+        const norm = normaliser(w);
+        if(!index.has(norm)) index.set(norm, w);
+      });
+    });
+  });
+  return index;
+}
+
+function suggererCorrection(motNormalise, index){
+  if(motNormalise.length < 4) return null;
+  let meilleur = null, meilleureDist = Infinity;
+  index.forEach((original, norm) => {
+    if(norm === motNormalise) return;
+    if(Math.abs(norm.length - motNormalise.length) > 2) return;
+    const d = distanceLevenshtein(motNormalise, norm);
+    if(d < meilleureDist){ meilleureDist = d; meilleur = original; }
+  });
+  const seuil = motNormalise.length <= 5 ? 1 : 2;
+  return (meilleur && meilleureDist <= seuil) ? meilleur : null;
+}
+
+// Reconstruit le texte d'origine en remplaçant uniquement les mots corrigés,
+// en conservant ponctuation et espaces intacts.
+function construireTexteCorrige(texte, corrections){
+  if(!corrections.size) return null;
+  let changed = false;
+  const nouveau = texte.split(/([^a-zA-ZÀ-ÿ0-9]+)/).map(tok => {
+    if(!tok) return tok;
+    const norm = normaliser(tok);
+    if(corrections.has(norm)){ changed = true; return corrections.get(norm); }
+    return tok;
+  }).join("");
+  return changed ? nouveau : null;
+}
+
 function badgeInfo(niveau){
   if(niveau === "danger") return { label:"Contient du gluten", cls:"danger" };
   if(niveau === "warn") return { label:"À vérifier (sur l'étiquette du produit)", cls:"warn" };
@@ -52,42 +120,87 @@ function badgeInfo(niveau){
   return { label:"Non répertorié", cls:"unknown" };
 }
 
+// Évalue un morceau de texte : trouve le meilleur ingrédient correspondant, vérifie
+// que tous les mots significatifs de la recherche sont couverts par cette correspondance,
+// et propose une correction orthographique pour les mots non reconnus.
+// Si un mot inconnu (faute de frappe, terme non reconnu) traîne à côté d'un mot connu
+// classé "sans gluten", on refuse de conclure à un résultat rassurant : mieux vaut
+// afficher "non répertorié" que risquer un faux "sans gluten".
+function evaluerMorceau(morceau){
+  const match = chercheIngredient(morceau);
+  const motsQuery = motsSignificatifs(morceau);
+  let motsNonCouverts, niveauEffectif;
+
+  if(!match){
+    niveauEffectif = "unknown";
+    motsNonCouverts = motsQuery;
+  } else {
+    const aliasNormalises = match.noms.map(n => normaliser(n));
+    motsNonCouverts = motsQuery.filter(w => !aliasNormalises.some(a => a.includes(w)));
+    const couvertureOk = motsNonCouverts.length === 0;
+    niveauEffectif = (match.niveau === "safe" && !couvertureOk) ? "unknown" : match.niveau;
+  }
+
+  let texteCorrige = null;
+  if(motsNonCouverts.length){
+    const index = construireIndexMots();
+    const corrections = new Map();
+    motsNonCouverts.forEach(w => {
+      const s = suggererCorrection(w, index);
+      if(s) corrections.set(w, s);
+    });
+    texteCorrige = construireTexteCorrige(morceau, corrections);
+  }
+
+  return { match, niveauEffectif, motsNonCouverts, texteCorrige };
+}
+
 function analyser(){
   const q = document.getElementById("query").value;
   if(!q.trim()) return;
 
   const morceaux = q.split(",").map(s => s.trim()).filter(Boolean);
-  const trouves = morceaux.map(m => ({ texte:m, match: chercheIngredient(m) }));
+  const trouves = morceaux.map(m => ({ texte:m, ...evaluerMorceau(m) }));
+
+  derniereAnalyse = { morceaux, trouves };
 
   const ordre = { safe:0, unknown:1, warn:2, danger:3 };
   let pire = "safe";
   trouves.forEach(t => {
-    const n = t.match ? t.match.niveau : "unknown";
-    if(ordre[n] > ordre[pire]) pire = n;
+    if(ordre[t.niveauEffectif] > ordre[pire]) pire = t.niveauEffectif;
   });
 
   dernierResultat = { titre:q, niveau:pire };
 
   const b = badgeInfo(pire);
 
-  const rows = trouves.map(t => {
+  const rows = trouves.map((t, i) => {
+    const suggestion = t.texteCorrige
+      ? `<button class="suggestion-btn" onclick="appliquerCorrection(${i})">Vouliez-vous dire « ${escapeHtml(t.texteCorrige)} » ?</button>`
+      : "";
     if(t.match){
-      const tb = badgeInfo(t.match.niveau);
+      const tb = badgeInfo(t.niveauEffectif);
+      const degrade = t.niveauEffectif !== t.match.niveau;
+      const note = degrade
+        ? `« ${t.motsNonCouverts.join(', ')} » n'est pas reconnu (faute de frappe ?). Seul « ${t.match.noms[0]} » est identifié comme sans gluten — vérifie l'orthographe avant de conclure.`
+        : t.match.note;
       return `<div class="ingredient-row">
         <div class="head"><span class="name">${escapeHtml(t.texte)}</span><span class="tag ${tb.cls}">${tb.label}</span></div>
-        <span class="note">${escapeHtml(t.match.note)}</span>
+        <span class="note">${escapeHtml(note)}</span>
+        ${suggestion}
       </div>`;
     }
     return `<div class="ingredient-row">
       <div class="head"><span class="name">${escapeHtml(t.texte)}</span><span class="tag unknown">Non répertorié</span></div>
       <span class="note">Pas encore dans le carnet — vérifie l'étiquette, ou ajoute-le si tu as une source fiable.</span>
+      ${suggestion}
     </div>`;
   }).join("");
 
-  const sources = [...new Set(trouves.filter(t => t.match).map(t => t.match.source))];
+  const sources = [...new Set(trouves.filter(t => t.match && t.niveauEffectif === t.match.niveau).map(t => t.match.source))];
   const sourcesHtml = sources.length
     ? `<div class="sources"><div class="label">Sources</div><ul>${sources.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul></div>`
-    : `<div class="sources"><div class="label">Sources</div><ul><li>Aucun ingrédient reconnu dans le carnet.</li></ul></div>`;
+    : `<div class="sources"><div class="label">Sources</div><ul><li>Aucun ingrédient reconnu avec certitude dans le carnet.</li></ul></div>`;
 
   const dejaDansCarnet = toutesLesEntrees().some(e => normaliser(e.noms[0]) === normaliser(q));
 
@@ -111,6 +224,15 @@ function analyser(){
         </button>
       </div>
     </div>`;
+}
+
+function appliquerCorrection(index){
+  const t = derniereAnalyse.trouves[index];
+  if(!t || !t.texteCorrige) return;
+  const nouveauxMorceaux = [...derniereAnalyse.morceaux];
+  nouveauxMorceaux[index] = t.texteCorrige;
+  document.getElementById("query").value = nouveauxMorceaux.join(", ");
+  analyser();
 }
 
 function ajouterAuCarnet(){

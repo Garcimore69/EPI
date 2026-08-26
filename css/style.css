@@ -95,6 +95,12 @@ header{ display:flex; align-items:center; justify-content:space-between; margin-
 .ingredient-row .name{ font-weight:600; }
 .ingredient-row .note{ font-size:11.5px; color:var(--ink-soft); line-height:1.4; }
 .ingredient-row .tag{ flex:none; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; }
+.suggestion-btn{
+  align-self:flex-start; margin-top:2px; border:1.5px dashed var(--wheat-dark);
+  background:#FFF8EC; color:var(--wheat-dark); border-radius:8px; padding:5px 11px;
+  font-size:12px; font-weight:700; cursor:pointer;
+}
+.suggestion-btn:hover{ background:var(--wheat); color:#fff; border-style:solid; }
 .tag.danger{ background:var(--danger-bg); color:var(--danger-text); }
 .tag.safe{ background:var(--safe-bg); color:var(--safe-text); }
 .tag.warn{ background:var(--warn-bg); color:var(--warn-text); }
